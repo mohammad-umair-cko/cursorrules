@@ -1,0 +1,205 @@
+---
+name: test_driven_development_dotnet
+description: Standards for Test-Driven Development (TDD) in ASP.NET Core projects
+date: 2025-04-21
+globs:
+  - "src/**/*.cs"
+  - "tests/**/*.cs"
+tags:
+  - testing
+  - tdd
+  - unit-tests
+  - services
+  - specs
+alwaysApply: true
+---
+
+## 🧪 Test-Driven Development (TDD) in ASP.NET Core
+
+This rule enforces TDD practices in ASP.NET Core projects by promoting test-first development, behavior-driven specs, and code coverage of all scenarios.
+
+---
+
+## 🔁 Core Principles
+
+1. **Test First, Code Second**
+   - Always check for existing tests before writing new code.
+   - Create tests BEFORE writing or updating the implementation.
+   - Use tests to define expected behavior and constraints.
+
+2. **Red → Green → Refactor**
+   - 🔴 Write a failing test
+   - 🟢 Write the simplest code to pass it
+   - 🛠 Refactor both code and tests for clarity, keeping them green
+
+3. **Tests Are Documentation**
+   - Good tests describe **what** a system does, **not how**
+   - Include edge cases and error handling
+   - Describe scenarios using clear naming conventions
+   - Don't use Mocks (except for things we don't own like HttpClient, DBs, etc). Rather use Fake or InMemory implementations.
+
+---
+
+## ✅ Validation Checklist
+
+Before writing or reviewing production code:
+
+- [ ] Spec/test class exists in `tests/` mirroring the structure of `src/`
+- [ ] All public methods are covered with unit
+- [ ] Edge cases and invalid inputs are handled
+- [ ] Tests fail before implementation, pass after
+- [ ] Tests are isolated, repeatable, and assert meaningful behavior
+- [ ] No implementation-only commits — always pair with tests
+- [ ] Once done with implementation add integration tests for critical path
+
+---
+
+## 🧰 Common Test Patterns
+
+### ✅ Service Tests
+```csharp
+public class EmailSenderTests
+{
+    [Fact]
+    public void Send_WithValidInput_ReturnsSuccess()
+    {
+        var sender = new EmailSender();
+        var result = sender.Send("test@example.com", "Hello");
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Send_WithEmptyEmail_ReturnsFailure()
+    {
+        var sender = new EmailSender();
+        var result = sender.Send("", "Hello");
+
+        result.IsSuccess.Should().BeFalse();
+        result.ErrorMessage.Should().Be("Email is required");
+    }
+}
+```
+
+### ✅ Model Validation (with FluentValidation)
+```csharp
+public class UserValidatorTests
+{
+    [Fact]
+    public void Validate_MissingEmail_ReturnsValidationError()
+    {
+        var validator = new UserValidator();
+        var result = validator.Validate(new User());
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contains(e => e.PropertyName == "Email");
+    }
+
+    [Fact]
+    public void Validate_ValidUser_PassesValidation()
+    {
+        var validator = new UserValidator();
+        var user = new User { Email = "valid@example.com" };
+
+        var result = validator.Validate(user);
+
+        result.IsValid.Should().BeTrue();
+    }
+}
+```
+
+### ✅ Controller Tests (with WebApplicationFactory)
+```csharp
+public class UsersControllerTests : IClassFixture<WebApplicationFactory<Program>>
+{
+    private readonly HttpClient _client;
+
+    public UsersControllerTests(WebApplicationFactory<Program> factory)
+    {
+        _client = factory.CreateClient();
+    }
+
+    [Fact]
+    public async Task GetUser_Returns200AndUserData()
+    {
+        var response = await _client.GetAsync("/api/users/1");
+
+        response.EnsureSuccessStatusCode();
+        var content = await response.Content.ReadAsStringAsync();
+
+        content.Should().Contains("username");
+    }
+
+    [Fact]
+    public async Task GetUser_NotFound_Returns404()
+    {
+        var response = await _client.GetAsync("/api/users/9999");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+}
+```
+
+---
+
+## ⛔ What Not To Do
+
+### 🚫 No tests
+```csharp
+public class InvoiceService
+{
+    public Invoice Generate(decimal amount)
+    {
+        return new Invoice { Total = amount }; // Created without any test coverage
+    }
+}
+```
+
+### 🚫 Over-mocking internal logic
+```csharp
+var mockService = new Mock<InvoiceService>();
+mockService.Setup(x => x.Generate(It.IsAny<decimal>())).Returns(new Invoice());
+// Avoid mocking logic under your control
+```
+
+### 🚫 Testing implementation details
+```csharp
+// Bad: tightly coupled to private field
+Assert.Equal("abc123", invoiceService._token);
+```
+
+---
+
+## 🧠 Best Practices
+
+- 🔹 One test class per implementation class
+- 🔹 Group related tests with `#region` or nested classes
+- 🔹 Use clear naming: `Scenario`. Avoid tieing it to code. Keep it short.
+- 🔹 Prefer real objects; mock only what you don’t own (e.g., HTTP clients, DBs)
+- 🔹 Keep tests deterministic and isolated
+- 🔹 Match test folder structure with `src/` structure
+- 🔹 Use [FluentAssertions](https://fluentassertions.com/) for expressive assertions
+- 🔹 Use `[Theory]` and `[InlineData]` to cover multiple cases efficiently
+
+---
+
+## 📋 Enforcement
+
+The assistant should:
+
+1. ✅ Ensure a matching test file exists in `tests/` for each file in `src/`
+2. ✅ Block merging untested logic unless explicitly excluded (e.g., DTOs)
+3. ✅ Recommend tests for uncovered methods or paths
+4. ✅ Suggest descriptive test names and assertions for behavior
+5. ✅ Flag implementation-only commits without any corresponding test update
+6. ✅ Point to appropriate test pattern examples in this rule
+
+---
+
+## 📚 References
+
+- [xUnit Documentation](https://xunit.net/)
+- [FluentAssertions](https://fluentassertions.com/)
+- [ASP.NET Core Testing](https://learn.microsoft.com/en-us/aspnet/core/test/)
+- [Microsoft Unit Testing Best Practices](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices)
+- [Cursor Rule Authoring Docs](https://docs.cursor.com/context/rules)
