@@ -1,0 +1,61 @@
+name: Conventional Commits
+description: Enforces the Conventional Commits specification for commit messages.
+language: all
+severity: warning
+trigger: on-commit
+alwaysIncluded: true
+match:
+  - type: regex
+    pattern: ^(?P<type>feat|fix|chore|docs|style|refactor|perf|test)(?P<scope>\([a-z0-9-]+\))?(?P<breaking>!)?: (?P<description>[^\n]+)(\n(?P<body>.+))?(\n(?P<footer>.+))?$
+message: |
+  Commit message should follow the Conventional Commits specification.
+
+  **Type:**
+  - `feat`:  A new feature
+  - `fix`:   A bug fix
+  - `chore`: Changes that don't affect the meaning of the code (e.g., updating dependencies)
+  - `docs`:  Documentation only changes
+  - `style`: Changes that do not affect the meaning of the code (e.g., formatting)
+  - `refactor`: A code change that neither adds a feature nor fixes a bug
+  - `perf`:  A code change that improves performance
+  - `test`:  Adding missing tests or correcting existing tests
+
+  **Scope (Optional):**
+  -  A scope may be provided to an type and is contained within parenthesis, e.g., `feat(parser): add ability to parse arrays`.
+
+  **Breaking Change Indicator (Optional):**
+  - A bang (`!`) must be appended after the type/scope prefix, before the colon, to signify a breaking change.
+  - Alternatively, a `BREAKING CHANGE: <description>` footer can be used.
+
+  **Description:**
+  -  A short description of the change.
+
+  **Body (Optional):**
+  -  A longer description of the change.
+
+  **Footer (Optional):**
+  -  One or more lines of text providing additional information, such as issue trackers, review URLs, breaking change descriptions, etc.
+
+example:
+  - |
+    feat(parser): add ability to parse arrays
+
+  - |
+    fix(lexer): correct handling of escaped characters
+
+  - |
+    feat!: introduce new API for user authentication
+
+  - |
+    feat(api)!:
+        - Drop support for Node.js 6.
+        - Change all query params to use snake_case.
+
+    BREAKING CHANGE: The API is no longer compatible with older clients.
+
+  - |
+    fix: correct minor typos in the documentation
+
+    See the issue for the complete details: closes #123
+
+    Reviewed-by: Z
